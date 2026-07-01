@@ -39,7 +39,7 @@ function App() {
   return (
     <div className="min-h-screen bg-[#030712] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(34,211,238,0.15),rgba(255,255,255,0))] px-4 py-12 text-slate-100 sm:px-6 lg:px-8 selection:bg-cyan-500/30">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12 relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-900/40 p-8 shadow-2xl shadow-cyan-900/20 backdrop-blur-xl">
+        <div className="mb-12 relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-900/40 p-8 shadow-2xl shadow-cyan-900/20 backdrop-blur-xl print:hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5" />
           <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div>
@@ -53,12 +53,12 @@ function App() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 print:hidden">
           <UploadPanel label="Image A (Reference)" onFileSelect={setFileA} selectedFile={fileA} />
           <UploadPanel label="Image B (Comparison)" onFileSelect={setFileB} selectedFile={fileB} />
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-center space-y-8">
+        <div className="mt-12 flex flex-col items-center justify-center space-y-8 print:hidden">
           <div className="flex w-full max-w-md flex-col items-center space-y-4 rounded-3xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md shadow-xl shadow-black/50">
             <label htmlFor="sensitivity" className="text-sm font-semibold text-slate-300 tracking-wide uppercase">
               Sensitivity: <span className="text-cyan-400">{sensitivity}%</span>
@@ -92,10 +92,10 @@ function App() {
           </button>
         </div>
 
-        {error ? <div className="mt-8 rounded-2xl border border-red-800/50 bg-red-950/40 p-4 text-center text-sm font-medium text-red-300 shadow-lg backdrop-blur-md">{error}</div> : null}
+        {error ? <div className="mt-8 rounded-2xl border border-red-800/50 bg-red-950/40 p-4 text-center text-sm font-medium text-red-300 shadow-lg backdrop-blur-md print:hidden">{error}</div> : null}
 
         {loading ? (
-          <div className="mt-12 flex items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 p-12 shadow-2xl backdrop-blur-md animate-pulse-slow">
+          <div className="mt-12 flex items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 p-12 shadow-2xl backdrop-blur-md animate-pulse-slow print:hidden">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-500/30 border-t-cyan-400" />
             <span className="ml-4 font-display text-xl text-slate-300 tracking-wide">Analyzing geometry...</span>
           </div>
@@ -103,6 +103,22 @@ function App() {
 
         {result ? (
           <div className="mt-8 space-y-6">
+            <div className="flex items-center justify-between print:hidden">
+              <h2 className="text-2xl font-bold text-white">Analysis Results</h2>
+              <button
+                onClick={() => window.print()}
+                className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 font-semibold text-cyan-200 transition-all hover:bg-cyan-500/20 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)] flex items-center gap-2 cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download Report (PDF)
+              </button>
+            </div>
+            <div className="hidden print:block mb-8">
+              <h1 className="text-3xl font-bold text-black">CAD Comparison Report</h1>
+              <p className="text-sm text-gray-600 mt-2">Generated on {new Date().toLocaleDateString()}</p>
+            </div>
             <ResultsView result={result} />
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <StatsCard statistics={result.statistics} />
