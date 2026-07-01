@@ -23,11 +23,11 @@ def compare_images(request: Request, image_a: UploadFile = File(...), image_b: U
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    input_a = UPLOAD_DIR / f"{Path(image_a.filename or 'image_a').stem}_a" 
-    input_b = UPLOAD_DIR / f"{Path(image_b.filename or 'image_b').stem}_b"
+    original_suffix_a = Path(image_a.filename or "image_a").suffix.lower() or ".png"
+    original_suffix_b = Path(image_b.filename or "image_b").suffix.lower() or ".png"
 
-    image_a_path = input_a.with_suffix(".png")
-    image_b_path = input_b.with_suffix(".png")
+    image_a_path = UPLOAD_DIR / f"{Path(image_a.filename or 'image_a').stem}_a{original_suffix_a}"
+    image_b_path = UPLOAD_DIR / f"{Path(image_b.filename or 'image_b').stem}_b{original_suffix_b}"
 
     image_a_bytes = image_a.file.read()
     image_b_bytes = image_b.file.read()

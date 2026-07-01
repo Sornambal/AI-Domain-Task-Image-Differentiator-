@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Optional
 
 import cv2
-import fitz
 import numpy as np
 from PIL import Image
 
@@ -32,6 +31,11 @@ def convert_to_standardized_png(input_path: str | os.PathLike, output_path: str 
         return output_path
 
     if ext == ".pdf":
+        try:
+            import fitz
+        except Exception as exc:
+            raise RuntimeError("PyMuPDF failed to load. PDF conversion is unavailable until the native dependency is installed correctly.") from exc
+
         doc = fitz.open(input_path)
         page = doc.load_page(0)
         zoom = 2.0
