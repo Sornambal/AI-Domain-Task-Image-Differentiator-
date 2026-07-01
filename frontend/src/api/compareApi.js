@@ -9,9 +9,7 @@ export const uploadAndCompare = async (fileA, fileB) => {
   formData.append('image_a', fileA);
   formData.append('image_b', fileB);
 
-  const response = await api.post('/api/compare', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const response = await api.post('/api/compare', formData);
 
   return response.data;
 };

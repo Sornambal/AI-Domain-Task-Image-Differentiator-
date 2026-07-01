@@ -20,11 +20,16 @@ function App() {
 
     setLoading(true);
     setError('');
+    setResult(null);
+    console.log('Starting compare', { fileA, fileB });
+
     try {
       const response = await uploadAndCompare(fileA, fileB);
+      console.log('Compare response', response);
       setResult(response);
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Comparison failed.');
+      console.error('Compare error', err);
+      setError(err?.response?.data?.detail || err?.message || 'Comparison failed.');
     } finally {
       setLoading(false);
     }
