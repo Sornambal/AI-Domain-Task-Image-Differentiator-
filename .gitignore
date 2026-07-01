@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Node / Vite
+node_modules/
+dist/
+build/
+.npm/
+
+# Uploads and generated artifacts
+backend/uploads/
+backend/test_output/
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.dxf
+*.dwg
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

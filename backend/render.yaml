@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cad-compare-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://cad-compare-frontend.onrender.com
