@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile, Form
 
 from services.alignment import align_images
 from services.diff_engine import detect_differences
@@ -16,7 +16,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @router.post("/compare", status_code=200)
-def compare_images(request: Request, image_a: UploadFile = File(...), image_b: UploadFile = File(...)):
+def compare_images(request: Request, image_a: UploadFile = File(...), image_b: UploadFile = File(...), sensitivity: int = Form(50)):
     try:
         validate_upload_file(image_a.file, image_a.filename or "")
         validate_upload_file(image_b.file, image_b.filename or "")
@@ -44,7 +44,7 @@ def compare_images(request: Request, image_a: UploadFile = File(...), image_b: U
     image_b_array = load_image_as_numpy(converted_b)
 
     aligned_b, _ = align_images(image_a_array, image_b_array)
-    stats = detect_differences(image_a_array, aligned_b)
+    stats = detect_differences(image_a_array, aligned_b, sensitivity)
     summary = generate_summary(stats)
 
     diff_path, heatmap_path, composite_path = create_visualizations(image_a_array, image_b_array, aligned_b, stats["regions"], UPLOAD_DIR)

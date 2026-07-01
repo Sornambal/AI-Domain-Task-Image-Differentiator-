@@ -8,6 +8,7 @@ import { uploadAndCompare } from './api/compareApi';
 function App() {
   const [fileA, setFileA] = useState(null);
   const [fileB, setFileB] = useState(null);
+  const [sensitivity, setSensitivity] = useState(50);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -24,7 +25,7 @@ function App() {
     console.log('Starting compare', { fileA, fileB });
 
     try {
-      const response = await uploadAndCompare(fileA, fileB);
+      const response = await uploadAndCompare(fileA, fileB, sensitivity);
       console.log('Compare response', response);
       setResult(response);
     } catch (err) {
@@ -36,17 +37,18 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_24%),linear-gradient(135deg,_#020617_0%,_#07111f_100%)] px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#030712] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(34,211,238,0.15),rgba(255,255,255,0))] px-4 py-12 text-slate-100 sm:px-6 lg:px-8 selection:bg-cyan-500/30">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 rounded-3xl border border-slate-800/80 bg-slate-900/70 p-8 shadow-2xl shadow-cyan-950/20 backdrop-blur">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="mb-12 relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-900/40 p-8 shadow-2xl shadow-cyan-900/20 backdrop-blur-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5" />
+          <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="mb-2 text-sm font-semibold uppercase tracking-[0.3em] text-cyan-400">CAD Compare Studio</p>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">AI-Based CAD Drawing Difference Detection</h1>
-              <p className="mt-3 max-w-2xl text-lg text-slate-400">Upload two CAD drawings and get aligned difference highlights, detailed statistics, and an AI-generated summary in seconds.</p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-cyan-400">CAD Compare Studio</p>
+              <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl bg-gradient-to-r from-white via-slate-200 to-cyan-200 bg-clip-text text-transparent">AI-Based CAD Difference Detection</h1>
+              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-400">Upload two CAD drawings and get aligned difference highlights, detailed statistics, and an AI-generated summary in seconds.</p>
             </div>
-            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-200">
-              Supports PNG, JPG, PDF, DXF, and DWG workflows
+            <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-3 text-sm font-medium text-cyan-200 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+              Supports PNG, JPG, PDF, DXF, and DWG
             </div>
           </div>
         </div>
@@ -56,22 +58,46 @@ function App() {
           <UploadPanel label="Image B (Comparison)" onFileSelect={setFileB} selectedFile={fileB} />
         </div>
 
-        <div className="mt-6 flex justify-center">
+        <div className="mt-12 flex flex-col items-center justify-center space-y-8">
+          <div className="flex w-full max-w-md flex-col items-center space-y-4 rounded-3xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md shadow-xl shadow-black/50">
+            <label htmlFor="sensitivity" className="text-sm font-semibold text-slate-300 tracking-wide uppercase">
+              Sensitivity: <span className="text-cyan-400">{sensitivity}%</span>
+            </label>
+            <input
+              type="range"
+              id="sensitivity"
+              min="0"
+              max="100"
+              value={sensitivity}
+              onChange={(e) => setSensitivity(Number(e.target.value))}
+              className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-800 accent-cyan-400 outline-none"
+            />
+            <p className="text-xs text-slate-500 text-center font-medium">Lower = Ignore small defects | Higher = Precision detail</p>
+          </div>
+
           <button
             onClick={handleCompare}
             disabled={loading}
-            className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-7 py-3.5 font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:scale-[1.01] hover:shadow-cyan-500/30 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:shadow-none"
+            className="group relative inline-flex items-center justify-center overflow-hidden rounded-full p-4 px-10 font-semibold text-white transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-[0_0_40px_-10px_rgba(34,211,238,0.5)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
           >
-            {loading ? 'Comparing…' : 'Compare Drawings'}
+            <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-600 bg-[length:200%_100%] transition-all duration-500 group-hover:bg-[100%_0]" />
+            <span className="relative flex items-center gap-3 tracking-wide">
+              {loading ? (
+                <>
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Processing...
+                </>
+              ) : 'Run Analysis'}
+            </span>
           </button>
         </div>
 
-        {error ? <div className="mt-4 rounded-2xl border border-red-800/70 bg-red-950/70 p-4 text-sm text-red-200 shadow-lg">{error}</div> : null}
+        {error ? <div className="mt-8 rounded-2xl border border-red-800/50 bg-red-950/40 p-4 text-center text-sm font-medium text-red-300 shadow-lg backdrop-blur-md">{error}</div> : null}
 
         {loading ? (
-          <div className="mt-8 flex items-center justify-center rounded-3xl border border-slate-800 bg-slate-900/80 p-10 shadow-xl shadow-slate-950/30">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
-            <span className="ml-3 text-lg text-slate-300">Analyzing drawings…</span>
+          <div className="mt-12 flex items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 p-12 shadow-2xl backdrop-blur-md animate-pulse-slow">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-500/30 border-t-cyan-400" />
+            <span className="ml-4 font-display text-xl text-slate-300 tracking-wide">Analyzing geometry...</span>
           </div>
         ) : null}
 

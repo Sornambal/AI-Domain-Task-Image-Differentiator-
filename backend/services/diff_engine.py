@@ -79,7 +79,7 @@ def _location_bucket(x: int, y: int, width: int, height: int) -> str:
     return f"{vertical}-{horizontal}".replace("center-center", "center")
 
 
-def detect_differences(image_a: np.ndarray, image_b: np.ndarray) -> dict:
+def detect_differences(image_a: np.ndarray, image_b: np.ndarray, sensitivity: int = 50) -> dict:
     if image_a.shape != image_b.shape:
         target_shape = (max(image_a.shape[0], image_b.shape[0]), max(image_a.shape[1], image_b.shape[1]))
         padded_a = np.zeros((target_shape[0], target_shape[1], 3), dtype=np.uint8)
@@ -103,12 +103,14 @@ def detect_differences(image_a: np.ndarray, image_b: np.ndarray) -> dict:
     dilated = cv2.dilate(mask, kernel, iterations=1)
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+    min_area = max(10, 200 - (sensitivity * 2))
+
     boxes = []
     for contour in contours:
-        if cv2.contourArea(contour) < 100:
+        if cv2.contourArea(contour) < min_area:
             continue
         x, y, w, h = cv2.boundingRect(contour)
-        if w * h < 100:
+        if w * h < min_area:
             continue
         boxes.append((x, y, w, h))
 
@@ -122,6 +124,8 @@ def detect_differences(image_a: np.ndarray, image_b: np.ndarray) -> dict:
         regions.append(
             {
                 "bbox": [x, y, x + w, y + h],
+                "width": w,
+                "height": h,
                 "area_px": area_px,
                 "centroid": [centroid[0], centroid[1]],
                 "location": location,
