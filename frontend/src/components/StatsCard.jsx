@@ -2,19 +2,19 @@ import React from 'react';
 
 function StatsCard({ statistics }) {
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-lg">
-      <h3 className="mb-4 text-lg font-semibold">Difference Statistics</h3>
+    <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+      <h3 className="mb-4 text-lg font-semibold text-slate-100">Difference Statistics</h3>
       <div className="mb-4 grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl bg-slate-800 p-4">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
           <div className="text-sm text-slate-400">Changed regions</div>
-          <div className="text-2xl font-semibold">{statistics?.num_changed_regions ?? 0}</div>
+          <div className="mt-1 text-2xl font-semibold text-cyan-300">{statistics?.num_changed_regions ?? 0}</div>
         </div>
-        <div className="rounded-xl bg-slate-800 p-4">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
           <div className="text-sm text-slate-400">Area changed</div>
-          <div className="text-2xl font-semibold">{statistics?.percent_area_changed ?? 0}%</div>
+          <div className="mt-1 text-2xl font-semibold text-cyan-300">{statistics?.percent_area_changed ?? 0}%</div>
         </div>
       </div>
-      <div className="overflow-hidden rounded-xl border border-slate-800">
+      <div className="overflow-hidden rounded-2xl border border-slate-800">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-800 text-left text-slate-300">
             <tr>

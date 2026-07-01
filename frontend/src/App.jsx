@@ -31,11 +31,19 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-10 text-slate-100 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_24%),linear-gradient(135deg,_#020617_0%,_#07111f_100%)] px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-semibold tracking-tight">AI-Based CAD Drawing Difference Detection</h1>
-          <p className="mt-3 text-lg text-slate-400">Upload two CAD drawings and receive aligned diff highlights, statistics, and an AI summary.</p>
+        <div className="mb-8 rounded-3xl border border-slate-800/80 bg-slate-900/70 p-8 shadow-2xl shadow-cyan-950/20 backdrop-blur">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="mb-2 text-sm font-semibold uppercase tracking-[0.3em] text-cyan-400">CAD Compare Studio</p>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">AI-Based CAD Drawing Difference Detection</h1>
+              <p className="mt-3 max-w-2xl text-lg text-slate-400">Upload two CAD drawings and get aligned difference highlights, detailed statistics, and an AI-generated summary in seconds.</p>
+            </div>
+            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-200">
+              Supports PNG, JPG, PDF, DXF, and DWG workflows
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -47,18 +55,18 @@ function App() {
           <button
             onClick={handleCompare}
             disabled={loading}
-            className="rounded-full bg-cyan-600 px-6 py-3 font-medium text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-700"
+            className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-7 py-3.5 font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:scale-[1.01] hover:shadow-cyan-500/30 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:shadow-none"
           >
-            {loading ? 'Comparing…' : 'Compare'}
+            {loading ? 'Comparing…' : 'Compare Drawings'}
           </button>
         </div>
 
-        {error ? <div className="mt-4 rounded-xl border border-red-700 bg-red-950/50 p-3 text-sm text-red-200">{error}</div> : null}
+        {error ? <div className="mt-4 rounded-2xl border border-red-800/70 bg-red-950/70 p-4 text-sm text-red-200 shadow-lg">{error}</div> : null}
 
         {loading ? (
-          <div className="mt-8 flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-900/80 p-10">
+          <div className="mt-8 flex items-center justify-center rounded-3xl border border-slate-800 bg-slate-900/80 p-10 shadow-xl shadow-slate-950/30">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
-            <span className="ml-3 text-slate-300">Analyzing drawings…</span>
+            <span className="ml-3 text-lg text-slate-300">Analyzing drawings…</span>
           </div>
         ) : null}
 
