@@ -35,17 +35,28 @@ def align_images(image_a: np.ndarray, image_b: np.ndarray) -> tuple[np.ndarray, 
     aligned = cv2.warpPerspective(image_b, homography, (width, height))
 
     try:
-        _, refined_homography = cv2.findTransformECC(
-            cv2.cvtColor(image_b, cv2.COLOR_RGB2GRAY),
+        gray_aligned = cv2.cvtColor(aligned, cv2.COLOR_RGB2GRAY)
+        warp_matrix = np.eye(3, 3, dtype=np.float32)
+        cc, ecc_warp = cv2.findTransformECC(
+            gray_aligned,
             gray_a,
-            np.eye(3, 3, dtype=np.float32),
+            warp_matrix,
             cv2.MOTION_HOMOGRAPHY,
             criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, 1e-6),
         )
-        if refined_homography is not None:
+        # Compose: apply ECC's small correction on top of the coarse alignment
+        refined_homography = ecc_warp @ homography
+        refined_aligned = cv2.warpPerspective(image_b, refined_homography, (width, height))
+        
+        # Only accept if it's a genuine improvement — compare mean absolute pixel difference
+        a_channels = image_a[:, :, :3] if image_a.ndim == 3 else image_a
+        coarse_diff = np.mean(cv2.absdiff(aligned, a_channels))
+        refined_diff = np.mean(cv2.absdiff(refined_aligned, a_channels))
+        
+        if refined_diff < coarse_diff:
             homography = refined_homography
-            aligned = cv2.warpPerspective(image_b, homography, (width, height))
+            aligned = refined_aligned
     except cv2.error:
-        pass
+        pass  # keep the coarse ORB+RANSAC alignment if ECC fails to converge
 
     return aligned, homography
