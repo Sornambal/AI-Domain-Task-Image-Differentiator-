@@ -2,6 +2,8 @@
 
 <div align="center">
   <h3>A professional full-stack application for automated CAD drawing comparison, visual difference detection, and AI-powered summarization.</h3>
+  
+  [![Watch the Demo Video](https://img.shields.io/badge/🎥_Watch_Demo_Video-0052FF?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/file/d/1MF5Fktx6Yde4Cocno7VmKbGe130SMzTp/view?usp=sharing)
 </div>
 
 ## 📖 Overview
