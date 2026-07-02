@@ -13,6 +13,8 @@ function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
+  const [downloading, setDownloading] = useState(false);
+
   const handleCompare = async () => {
     if (!fileA || !fileB) {
       setError('Please upload both drawings before comparing.');
@@ -33,6 +35,39 @@ function App() {
       setError(err?.response?.data?.detail || err?.message || 'Comparison failed.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!result) return;
+    setDownloading(true);
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/report/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(result)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'cad_comparison_report.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download error', err);
+      alert('Failed to generate report.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -106,13 +141,18 @@ function App() {
             <div className="flex items-center justify-between print:hidden">
               <h2 className="text-2xl font-bold text-white">Analysis Results</h2>
               <button
-                onClick={() => window.print()}
-                className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 font-semibold text-cyan-200 transition-all hover:bg-cyan-500/20 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)] flex items-center gap-2 cursor-pointer"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 font-semibold text-cyan-200 transition-all hover:bg-cyan-500/20 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)] flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download Report (PDF)
+                {downloading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-cyan-200 border-t-transparent" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                )}
+                {downloading ? 'Generating PDF...' : 'Download Report (PDF)'}
               </button>
             </div>
             <div className="hidden print:block mb-8">

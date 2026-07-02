@@ -8,8 +8,8 @@ def get_content_bbox(image: np.ndarray) -> tuple[int, int, int, int]:
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return 0, 0, image.shape[1], image.shape[0]
-    all_pts = np.vstack(contours)
-    return cv2.boundingRect(all_pts)
+    largest = max(contours, key=cv2.contourArea)
+    return cv2.boundingRect(largest)
 
 
 def align_images(image_a: np.ndarray, image_b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

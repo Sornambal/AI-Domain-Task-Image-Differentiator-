@@ -124,22 +124,29 @@ def detect_differences(image_a: np.ndarray, image_b: np.ndarray, sensitivity: in
     _, mask = cv2.threshold(diff_map, threshold_val, 255, cv2.THRESH_BINARY)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-    merge_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 21))
-    dilated = cv2.dilate(mask, merge_kernel, iterations=2)
-    closed = cv2.morphologyEx(dilated, cv2.MORPH_CLOSE, merge_kernel, iterations=2)
-    contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    dilated = cv2.dilate(mask, kernel, iterations=1)
+    merge_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
+    dilated = cv2.dilate(dilated, merge_kernel, iterations=1)
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     total_pixels = image_a.shape[0] * image_a.shape[1]
     min_area_percent = 0.05 - (sensitivity / 100) * 0.045
     min_area = max(50, int(total_pixels * (min_area_percent / 100)))
 
     boxes = []
+    max_w = image_a.shape[1] * MAX_MERGED_REGION_FRACTION
+    max_h = image_a.shape[0] * MAX_MERGED_REGION_FRACTION
+    
     for contour in contours:
         if cv2.contourArea(contour) < min_area:
             continue
         x, y, w, h = cv2.boundingRect(contour)
         if w * h < min_area:
+            continue
+        if w > max_w or h > max_h:
+            print(f"DEBUG: Initial contour {w}x{h} exceeds cap, dropping.")
             continue
         boxes.append((x, y, w, h))
 

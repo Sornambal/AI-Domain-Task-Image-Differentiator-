@@ -1,10 +1,15 @@
 import os
+import uuid
 from pathlib import Path
+from typing import Any
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile, Form
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from services.alignment import align_images
 from services.diff_engine import detect_differences
 from services.format_converter import convert_to_standardized_png, load_image_as_numpy
+from services.pdf_report import generate_pdf_report
 from services.summary_generator import generate_summary
 from services.visualization import create_visualizations
 from utils.file_validation import validate_upload_file
@@ -13,6 +18,27 @@ router = APIRouter(prefix="/api", tags=["compare"])
 
 UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+class ReportRequest(BaseModel):
+    original_a_url: str
+    original_b_url: str
+    diff_visualization_url: str
+    heatmap_url: str
+    statistics: dict[str, Any]
+    ai_summary: str
+
+@router.post("/report/generate", status_code=200)
+def generate_report_endpoint(request: ReportRequest):
+    output_filename = f"report_{uuid.uuid4().hex}.pdf"
+    output_path = UPLOAD_DIR / output_filename
+    
+    generate_pdf_report(request.model_dump(), str(output_path))
+    
+    return FileResponse(
+        path=output_path, 
+        media_type="application/pdf", 
+        filename="cad_comparison_report.pdf"
+    )
 
 
 @router.post("/compare", status_code=200)
