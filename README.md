@@ -26,43 +26,55 @@ Users upload a reference drawing and a modified version (supporting raster image
 ## 🏗️ Architecture & Project Flow
 
 ```mermaid
-graph TD
-    %% User Action
-    User([User]) -->|Uploads Reference & Compare Files| Frontend
+flowchart LR
+    %% Professional Styling
+    classDef user fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff,rx:10,ry:10
+    classDef frontend fill:#3182ce,stroke:#2b6cb0,stroke-width:2px,color:#fff,rx:5,ry:5
+    classDef backend fill:#38a169,stroke:#2f855a,stroke-width:2px,color:#fff,rx:5,ry:5
+    classDef cv fill:#d69e2e,stroke:#b7791f,stroke-width:2px,color:#fff,rx:5,ry:5
+    classDef ai fill:#805ad5,stroke:#6b46c1,stroke-width:2px,color:#fff,rx:5,ry:5
+    classDef pdf fill:#e53e3e,stroke:#c53030,stroke-width:2px,color:#fff,rx:5,ry:5
 
-    %% Frontend Components
-    subgraph Frontend [React + Vite App]
-        UI[Web UI / Dashboard]
-        API_Client[Axios Client]
-        UI --> API_Client
+    %% Nodes & Grouping
+    U([🧑‍💻 User]):::user
+
+    subgraph Frontend [🌐 React + Vite Client]
+        direction TB
+        UI[Dashboard UI]:::frontend
+        Axios[API Client]:::frontend
+        UI <--> Axios
     end
 
-    %% Backend Services
-    subgraph Backend [FastAPI Backend]
-        API_Router[FastAPI Routers]
-        File_Validator[Validation & Conversion]
+    subgraph Backend [⚡ FastAPI Server]
+        direction LR
+        Router[API Router]:::backend
+        Validator[File Validator]:::backend
         
-        subgraph CVPipeline [Computer Vision Pipeline]
-            Alignment[Alignment Engine <br> ORB + ECC]
-            DiffGen[Difference Detection <br> Image Subtraction]
-            BBox[Region Merging & BBox]
+        subgraph Pipeline [🔍 Computer Vision Core]
+            direction TB
+            Align[1. ORB + ECC Alignment]:::cv
+            Diff[2. Image Subtraction]:::cv
+            BBox[3. Bounding Boxes]:::cv
+            Align --> Diff --> BBox
         end
-
-        LLM[Groq API Client <br> GenAI Summary]
-        PDF_Gen[ReportLab <br> PDF Generator]
         
-        API_Router --> File_Validator
-        File_Validator --> CVPipeline
-        CVPipeline --> LLM
-        CVPipeline --> PDF_Gen
-        LLM --> PDF_Gen
+        Groq[Groq API <br/> GenAI Summary]:::ai
+        ReportLab[ReportLab <br/> PDF Generator]:::pdf
     end
 
-    %% Data Flow
-    API_Client -->|Multipart Form Data| API_Router
-    PDF_Gen -->|Returns PDF / JSON Data| API_Router
-    API_Router -->|Response| API_Client
-    API_Client -->|Displays UI / Downloads PDF| User
+    %% Workflow Connections
+    U -- Uploads Files --> UI
+    Axios -- Multipart Data --> Router
+    Router --> Validator
+    Validator --> Align
+    
+    BBox --> Groq
+    BBox --> ReportLab
+    Groq --> ReportLab
+    
+    ReportLab -- Returns PDF/JSON --> Router
+    Router -- API Response --> Axios
+    UI -- Displays Results --> U
 ```
 
 ---
