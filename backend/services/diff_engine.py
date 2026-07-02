@@ -4,6 +4,60 @@ from skimage.metrics import structural_similarity
 
 
 
+MAX_MERGED_REGION_FRACTION = 0.08
+PROXIMITY_MERGE_PX = 16
+
+def _merge_boxes(boxes: list[tuple[int, int, int, int]], image_width: int, image_height: int) -> list[tuple[int, int, int, int]]:
+    if not boxes:
+        return []
+
+    max_w = image_width * MAX_MERGED_REGION_FRACTION
+    max_h = image_height * MAX_MERGED_REGION_FRACTION
+
+    merged = []
+    for box in boxes:
+        x, y, w, h = box
+        ex1, ey1 = x - PROXIMITY_MERGE_PX, y - PROXIMITY_MERGE_PX
+        ex2, ey2 = x + w + PROXIMITY_MERGE_PX, y + h + PROXIMITY_MERGE_PX
+        
+        current = [x, y, x + w, y + h]
+        if not merged:
+            merged.append(current)
+            continue
+
+        found = False
+        for index, candidate in enumerate(merged):
+            cx1, cy1, cx2, cy2 = candidate
+            
+            candidate_w = max(cx2, x + w) - min(cx1, x)
+            candidate_h = max(cy2, y + h) - min(cy1, y)
+            
+            if candidate_w > max_w or candidate_h > max_h:
+                print(f"DEBUG: Merge rejected! Resulting size {candidate_w}x{candidate_h} exceeds cap {max_w:.1f}x{max_h:.1f}")
+                continue
+
+            ix1 = max(ex1, cx1)
+            iy1 = max(ey1, cy1)
+            ix2 = min(ex2, cx2)
+            iy2 = min(ey2, cy2)
+            inter_area = max(0, ix2 - ix1) * max(0, iy2 - iy1)
+            
+            if inter_area > 0:
+                merged[index] = [min(cx1, x), min(cy1, y), max(cx2, x + w), max(cy2, y + h)]
+                found = True
+                break
+                
+        if not found:
+            merged.append(current)
+
+    final_boxes = [(x1, y1, x2 - x1, y2 - y1) for x1, y1, x2, y2 in merged]
+    for x, y, w, h in final_boxes:
+        if w > max_w or h > max_h:
+            raise ValueError(f"Merged box {w}x{h} exceeds maximum allowed size of {max_w:.1f}x{max_h:.1f}!")
+
+    return final_boxes
+
+
 def _classify_region(image_a: np.ndarray, image_b: np.ndarray, bbox: tuple[int, int, int, int]) -> str:
     x, y, w, h = bbox
     crop_a = image_a[y : y + h, x : x + w]
@@ -89,8 +143,10 @@ def detect_differences(image_a: np.ndarray, image_b: np.ndarray, sensitivity: in
             continue
         boxes.append((x, y, w, h))
 
+    merged_boxes = _merge_boxes(boxes, image_a.shape[1], image_a.shape[0])
+
     regions = []
-    for x, y, w, h in boxes:
+    for x, y, w, h in merged_boxes:
         area_px = int(w * h)
         centroid = (int(x + w / 2), int(y + h / 2))
         location = _location_bucket(x, y, image_a.shape[1], image_a.shape[0])
@@ -108,6 +164,10 @@ def detect_differences(image_a: np.ndarray, image_b: np.ndarray, sensitivity: in
         )
 
     regions.sort(key=lambda r: r["area_px"], reverse=True)
+    
+    # Assign 1-indexed numbers to sorted regions
+    for idx, region in enumerate(regions, 1):
+        region["number"] = idx
 
     percent_area_changed = round((sum(region["area_px"] for region in regions) / total_pixels) * 100, 2) if total_pixels else 0.0
     return {"num_changed_regions": len(regions), "percent_area_changed": percent_area_changed, "regions": regions}

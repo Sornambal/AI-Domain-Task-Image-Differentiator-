@@ -5,6 +5,17 @@ import numpy as np
 from PIL import Image
 
 
+def draw_marker(image, number, x, y, color, radius=14):
+    center = (int(x), int(y))
+    cv2.circle(image, center, radius, color, thickness=-1)
+    cv2.circle(image, center, radius, (255, 255, 255), thickness=2)
+    text = str(number)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.6
+    (tw, th), _ = cv2.getTextSize(text, font, font_scale, 2)
+    text_pos = (center[0] - tw // 2, center[1] + th // 2)
+    cv2.putText(image, text, text_pos, font, font_scale, (255, 255, 255), 2, cv2.LINE_AA)
+
 def create_visualizations(image_a: np.ndarray, image_b: np.ndarray, aligned_b: np.ndarray, regions: list[dict], output_dir: str | Path) -> tuple[str, str, str]:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -14,44 +25,32 @@ def create_visualizations(image_a: np.ndarray, image_b: np.ndarray, aligned_b: n
     drawn_labels = []
 
     diff_overlay = image_a.copy()
-    for idx, region in enumerate(regions, 1):
+    for region in regions:
         x1, y1, x2, y2 = region["bbox"]
         w, h = region.get("width", x2 - x1), region.get("height", y2 - y1)
-        
-        # Calculate faux 3D depth offset
-        dx = max(5, int(w * 0.1))
-        dy = max(5, int(h * 0.1))
-        
-        # Draw box (always)
-        cv2.rectangle(diff_overlay, (x1, y1), (x2, y2), (255, 0, 0), 2)
-        cv2.rectangle(diff_overlay, (x1 + dx, y1 - dy), (x2 + dx, y2 - dy), (0, 255, 0), 2)
-        cv2.line(diff_overlay, (x1, y1), (x1 + dx, y1 - dy), (255, 0, 0), 1)
-        cv2.line(diff_overlay, (x2, y1), (x2 + dx, y1 - dy), (255, 0, 0), 1)
-        cv2.line(diff_overlay, (x1, y2), (x1 + dx, y2 - dy), (255, 0, 0), 1)
-        cv2.line(diff_overlay, (x2, y2), (x2 + dx, y2 - dy), (255, 0, 0), 1)
-        
-        if idx <= MAX_LABELED_REGIONS:
-            label = f"#{idx} [{w}x{h}]"
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            font_scale = 1.0
-            thickness = 2
-            (text_w, text_h), _ = cv2.getTextSize(label, font, font_scale, thickness)
+        number = region.get("number", 1)
+        region_type = region.get("type", "modified")
+
+        if region_type == "added":
+            box_color = (0, 200, 0)
+        elif region_type == "removed":
+            box_color = (0, 0, 255)
+        else:
+            box_color = (0, 140, 255) # Orange (BGR)
+
+        cv2.rectangle(diff_overlay, (x1, y1), (x2, y2), box_color, 2)
+
+        if number <= MAX_LABELED_REGIONS:
+            marker_x, marker_y = x1, y1
             
-            label_x = x1 + dx
-            text_y = y1 - dy - 5 if y1 - dy - 5 > text_h else y1 - dy + text_h + 5
-            
-            overlap = False
+            # Simple overlap resolution
             for (lx, ly) in drawn_labels:
-                if ((label_x - lx) ** 2 + (text_y - ly) ** 2) ** 0.5 < LABEL_MIN_SPACING_PX:
-                    overlap = True
-                    break
+                if ((marker_x - lx) ** 2 + (marker_y - ly) ** 2) ** 0.5 < LABEL_MIN_SPACING_PX:
+                    marker_x += int(LABEL_MIN_SPACING_PX * 0.8)
+                    marker_y -= int(LABEL_MIN_SPACING_PX * 0.8)
             
-            if not overlap:
-                overlay = diff_overlay.copy()
-                cv2.rectangle(overlay, (label_x, text_y - text_h - 4), (label_x + text_w, text_y + 4), (30, 30, 30), -1)
-                cv2.addWeighted(overlay, 0.6, diff_overlay, 0.4, 0, diff_overlay)
-                cv2.putText(diff_overlay, label, (label_x, text_y), font, font_scale, (0, 255, 255), thickness)
-                drawn_labels.append((label_x, text_y))
+            draw_marker(diff_overlay, number, marker_x, marker_y, box_color)
+            drawn_labels.append((marker_x, marker_y))
 
     # Professional Heatmap Generation
     diff = cv2.absdiff(image_a, aligned_b)

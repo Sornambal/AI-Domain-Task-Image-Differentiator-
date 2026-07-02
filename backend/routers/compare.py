@@ -45,7 +45,15 @@ def compare_images(request: Request, image_a: UploadFile = File(...), image_b: U
 
     aligned_b, _ = align_images(image_a_array, image_b_array)
     stats = detect_differences(image_a_array, aligned_b, sensitivity)
-    summary = generate_summary(stats)
+    summary_data = generate_summary(stats)
+    overall_summary = summary_data.get("overall_summary", "")
+    region_descriptions = summary_data.get("region_descriptions", [])
+    
+    desc_map = {item.get("number"): item.get("description", "") for item in region_descriptions if "number" in item}
+    for region in stats["regions"]:
+        num = region.get("number")
+        if num in desc_map:
+            region["description"] = desc_map[num]
 
     diff_path, heatmap_path, composite_path = create_visualizations(image_a_array, image_b_array, aligned_b, stats["regions"], UPLOAD_DIR)
 
@@ -56,5 +64,5 @@ def compare_images(request: Request, image_a: UploadFile = File(...), image_b: U
         "diff_visualization_url": f"{base_url}/uploads/{Path(diff_path).name}",
         "heatmap_url": f"{base_url}/uploads/{Path(heatmap_path).name}",
         "statistics": stats,
-        "ai_summary": summary,
+        "ai_summary": overall_summary,
     }

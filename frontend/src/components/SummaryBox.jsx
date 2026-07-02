@@ -1,6 +1,6 @@
 import React from 'react';
 
-function SummaryBox({ summary }) {
+function SummaryBox({ summary, regions = [] }) {
   return (
     <div className="relative overflow-hidden rounded-3xl border border-cyan-500/30 bg-cyan-950/30 p-8 shadow-2xl shadow-cyan-900/20 backdrop-blur-xl">
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent" />
@@ -13,11 +13,41 @@ function SummaryBox({ summary }) {
           </div>
           <h3 className="font-display text-xl font-semibold tracking-wide text-cyan-200">AI Analysis</h3>
         </div>
-        <div className="rounded-2xl border border-cyan-500/20 bg-slate-950/50 p-6">
+        <div className="rounded-2xl border border-cyan-500/20 bg-slate-950/50 p-6 mb-6">
           <p className="leading-relaxed text-slate-300 font-medium">
             {summary || 'The AI summary will appear here once the comparison finishes.'}
           </p>
         </div>
+        
+        {regions.length > 0 && (
+          <div className="space-y-4">
+            <h4 className="font-display text-lg font-semibold tracking-wide text-slate-200">Region Details</h4>
+            <div className="grid gap-3">
+              {regions.map((region) => {
+                let badgeColor = "bg-orange-500/20 text-orange-400 border-orange-500/30";
+                if (region.type === "added") badgeColor = "bg-green-500/20 text-green-400 border-green-500/30";
+                if (region.type === "removed") badgeColor = "bg-red-500/20 text-red-400 border-red-500/30";
+                
+                return (
+                  <div key={region.number} className="flex gap-4 rounded-xl border border-slate-700/50 bg-slate-900/40 p-4 transition-colors hover:bg-slate-800/60">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800 font-bold text-slate-300 border border-slate-600">
+                      {region.number}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${badgeColor}`}>
+                          {region.type}
+                        </span>
+                        <span className="text-slate-400 capitalize">{region.location.replace("-", " ")}</span>
+                      </div>
+                      <p className="text-sm text-slate-300">{region.description || "No specific details generated."}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

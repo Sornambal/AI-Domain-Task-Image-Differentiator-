@@ -122,7 +122,7 @@ function App() {
             <ResultsView result={result} />
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <StatsCard statistics={result.statistics} />
-              <SummaryBox summary={result.ai_summary} />
+              <SummaryBox summary={result.ai_summary} regions={result.statistics.regions} />
             </div>
           </div>
         ) : null}
