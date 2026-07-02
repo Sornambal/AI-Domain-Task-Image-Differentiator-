@@ -6,14 +6,14 @@ def align_images(image_a: np.ndarray, image_b: np.ndarray) -> tuple[np.ndarray, 
     gray_a = cv2.cvtColor(image_a, cv2.COLOR_RGB2GRAY)
     gray_b = cv2.cvtColor(image_b, cv2.COLOR_RGB2GRAY)
 
-    orb = cv2.ORB_create(500)
-    keypoints_a, descriptors_a = orb.detectAndCompute(gray_a, None)
-    keypoints_b, descriptors_b = orb.detectAndCompute(gray_b, None)
+    sift = cv2.SIFT_create()
+    keypoints_a, descriptors_a = sift.detectAndCompute(gray_a, None)
+    keypoints_b, descriptors_b = sift.detectAndCompute(gray_b, None)
 
     if descriptors_a is None or descriptors_b is None or len(keypoints_a) < 4 or len(keypoints_b) < 4:
         return image_b, np.eye(3, dtype=np.float32)
 
-    matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
+    matcher = cv2.BFMatcher(cv2.NORM_L2)
     matches = matcher.knnMatch(descriptors_a, descriptors_b, k=2)
 
     good_matches = []
@@ -27,7 +27,7 @@ def align_images(image_a: np.ndarray, image_b: np.ndarray) -> tuple[np.ndarray, 
     source_points = np.float32([keypoints_a[match.queryIdx].pt for match in good_matches]).reshape(-1, 1, 2)
     target_points = np.float32([keypoints_b[match.trainIdx].pt for match in good_matches]).reshape(-1, 1, 2)
 
-    homography, mask = cv2.findHomography(target_points, source_points, cv2.RANSAC, 5.0)
+    homography, mask = cv2.findHomography(target_points, source_points, cv2.RANSAC, 3.0)
     if homography is None:
         return image_b, np.eye(3, dtype=np.float32)
 

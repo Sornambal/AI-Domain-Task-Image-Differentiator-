@@ -47,8 +47,10 @@ def create_visualizations(image_a: np.ndarray, image_b: np.ndarray, aligned_b: n
                     break
             
             if not overlap:
-                cv2.rectangle(diff_overlay, (label_x, text_y - text_h - 2), (label_x + text_w, text_y + 2), (255, 255, 255), -1)
-                cv2.putText(diff_overlay, label, (label_x, text_y), font, font_scale, (255, 0, 0), thickness)
+                overlay = diff_overlay.copy()
+                cv2.rectangle(overlay, (label_x, text_y - text_h - 4), (label_x + text_w, text_y + 4), (30, 30, 30), -1)
+                cv2.addWeighted(overlay, 0.6, diff_overlay, 0.4, 0, diff_overlay)
+                cv2.putText(diff_overlay, label, (label_x, text_y), font, font_scale, (0, 255, 255), thickness)
                 drawn_labels.append((label_x, text_y))
 
     # Professional Heatmap Generation

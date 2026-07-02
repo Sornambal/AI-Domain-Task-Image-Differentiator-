@@ -2,9 +2,6 @@ import cv2
 import numpy as np
 from skimage.metrics import structural_similarity
 
-MERGE_DILATION_KERNEL_SIZE = (7, 7)
-PROXIMITY_MERGE_PX = 8
-MAX_MERGED_REGION_FRACTION = 0.15
 
 
 def _classify_region(image_a: np.ndarray, image_b: np.ndarray, bbox: tuple[int, int, int, int]) -> str:
@@ -27,75 +24,6 @@ def _classify_region(image_a: np.ndarray, image_b: np.ndarray, bbox: tuple[int, 
     return "modified"
 
 
-def _merge_boxes(boxes: list[tuple[int, int, int, int]], image_width: int, image_height: int, iou_threshold: float = 0.2) -> list[tuple[int, int, int, int]]:
-    if not boxes:
-        return []
-
-    max_w = image_width * MAX_MERGED_REGION_FRACTION
-    max_h = image_height * MAX_MERGED_REGION_FRACTION
-
-    merged = []
-    for box in boxes:
-        x, y, w, h = box
-        ex1, ey1 = x - PROXIMITY_MERGE_PX, y - PROXIMITY_MERGE_PX
-        ex2, ey2 = x + w + PROXIMITY_MERGE_PX, y + h + PROXIMITY_MERGE_PX
-        
-        current = [x, y, x + w, y + h]
-        if not merged:
-            merged.append(current)
-            continue
-
-        found = False
-        for index, candidate in enumerate(merged):
-            cx1, cy1, cx2, cy2 = candidate
-            
-            candidate_w = max(cx2, x + w) - min(cx1, x)
-            candidate_h = max(cy2, y + h) - min(cy1, y)
-            if candidate_w > max_w or candidate_h > max_h:
-                continue
-
-            ix1 = max(ex1, cx1)
-            iy1 = max(ey1, cy1)
-            ix2 = min(ex2, cx2)
-            iy2 = min(ey2, cy2)
-            inter_area = max(0, ix2 - ix1) * max(0, iy2 - iy1)
-            
-            if inter_area > 0:
-                merged[index] = [min(cx1, x), min(cy1, y), max(cx2, x + w), max(cy2, y + h)]
-                found = True
-                break
-                
-        if not found:
-            merged.append(current)
-
-    final_merged = []
-    for box in merged:
-        cx1, cy1, cx2, cy2 = box
-        if not final_merged:
-            final_merged.append(box)
-            continue
-            
-        found = False
-        for index, candidate in enumerate(final_merged):
-            fcx1, fcy1, fcx2, fcy2 = candidate
-            
-            candidate_w = max(fcx2, cx2) - min(fcx1, cx1)
-            candidate_h = max(fcy2, cy2) - min(fcy1, cy1)
-            if candidate_w > max_w or candidate_h > max_h:
-                continue
-
-            ix1 = max(cx1 - PROXIMITY_MERGE_PX, fcx1)
-            iy1 = max(cy1 - PROXIMITY_MERGE_PX, fcy1)
-            ix2 = min(cx2 + PROXIMITY_MERGE_PX, fcx2)
-            iy2 = min(cy2 + PROXIMITY_MERGE_PX, fcy2)
-            if max(0, ix2 - ix1) * max(0, iy2 - iy1) > 0:
-                final_merged[index] = [min(fcx1, cx1), min(fcy1, cy1), max(fcx2, cx2), max(fcy2, cy2)]
-                found = True
-                break
-        if not found:
-            final_merged.append(box)
-
-    return [(x1, y1, x2 - x1, y2 - y1) for x1, y1, x2, y2 in final_merged]
 
 
 def _location_bucket(x: int, y: int, width: int, height: int) -> str:
@@ -138,15 +66,15 @@ def detect_differences(image_a: np.ndarray, image_b: np.ndarray, sensitivity: in
     diff_map = np.clip(diff_map, 0, 1)  # clamp to a sane 0–1 range before scaling
     diff_map = (diff_map * 255).astype(np.uint8)
 
-    _, mask = cv2.threshold(diff_map, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    threshold_val = max(5, 255 - int(sensitivity * 2.5))
+    _, mask = cv2.threshold(diff_map, threshold_val, 255, cv2.THRESH_BINARY)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-    dilated = cv2.dilate(mask, kernel, iterations=1)
-    merge_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, MERGE_DILATION_KERNEL_SIZE)
-    dilated = cv2.dilate(dilated, merge_kernel, iterations=1)
-    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    merge_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 21))
+    dilated = cv2.dilate(mask, merge_kernel, iterations=2)
+    closed = cv2.morphologyEx(dilated, cv2.MORPH_CLOSE, merge_kernel, iterations=2)
+    contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     total_pixels = image_a.shape[0] * image_a.shape[1]
     min_area_percent = 0.05 - (sensitivity / 100) * 0.045
@@ -161,9 +89,8 @@ def detect_differences(image_a: np.ndarray, image_b: np.ndarray, sensitivity: in
             continue
         boxes.append((x, y, w, h))
 
-    merged_boxes = _merge_boxes(boxes, image_a.shape[1], image_a.shape[0])
     regions = []
-    for x, y, w, h in merged_boxes:
+    for x, y, w, h in boxes:
         area_px = int(w * h)
         centroid = (int(x + w / 2), int(y + h / 2))
         location = _location_bucket(x, y, image_a.shape[1], image_a.shape[0])
